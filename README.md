@@ -1,15 +1,19 @@
-# kittens-temp
+# temp
+temporary, quick, and e2ee file hoster.
 
-To install dependencies:
+![](https://img.shields.io/badge/Bun-1.3.3-000?style=for-the-badge)
+![](https://img.shields.io/badge/TypeScript-5.9.0-000?style=for-the-badge)
 
+## Setup
+
+<!-- dont include git cloning -->
 ```bash
 bun install
+bun run src/index.ts
 ```
 
-To run:
+## Docker
 
 ```bash
-bun run index.ts
+docker compose up -d
 ```
-
-This project was created using `bun init` in bun v1.3.3. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
