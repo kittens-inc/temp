@@ -23,28 +23,34 @@ const app = new Elysia()
       return { error: "File too large" };
     }
 
-    const id = generateId();
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const expiresAt = calculateRetention(file.size);
-    const passwordHash = password ? await hashPassword(password) : null;
+    try {
+      const id = generateId();
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const expiresAt = calculateRetention(file.size);
+      const passwordHash = password ? await hashPassword(password) : null;
 
-    await storage.upload(id, buffer, file.type);
-    await db.createFile({
-      id,
-      filename: file.name,
-      size: file.size,
-      mime_type: file.type,
-      expires_at: expiresAt,
-      password_hash: passwordHash,
-    });
+      await storage.upload(id, buffer, file.type);
+      await db.createFile({
+        id,
+        filename: file.name,
+        size: file.size,
+        mime_type: file.type,
+        expires_at: expiresAt,
+        password_hash: passwordHash,
+      });
 
-    const retentionDays = getRetentionDays(file.size);
-    return {
-      id,
-      url: `${process.env.BASE_URL}/${id}`,
-      expires_at: expiresAt.toISOString(),
-      retention_days: retentionDays,
-    };
+      const retentionDays = getRetentionDays(file.size);
+      return {
+        id,
+        url: `${process.env.BASE_URL}/${id}`,
+        expires_at: expiresAt.toISOString(),
+        retention_days: retentionDays,
+      };
+    } catch (err) {
+      console.error("Upload error:", err);
+      set.status = 500;
+      return { error: "Upload failed" };
+    }
   }, {
     body: t.Object({
       file: t.File(),
