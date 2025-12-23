@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "fs";
 
-const BASE_URL = "http://localhost:3067";
+const BASE_URL = process.env.BASE_URL || "http://localhost:3067";
 
 function toBase64(buffer: ArrayBuffer | Uint8Array): string {
 	const arrayBuffer =
