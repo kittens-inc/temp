@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "http://localhost:3067";
 
 async function testRateLimit() {
 	console.log("Testing rate limiting (10 uploads/minute per IP)...\n");
