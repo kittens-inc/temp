@@ -3,28 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>File Host</title>
+  <title>temp</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: monospace; background: #0a0a0a; color: #00ff00; padding: 2rem; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+    h1 { color: #00ff00; border-bottom: 1px solid #00ff00; padding-bottom: 0.5rem; }
+    h2 { color: #00aa00; }
+    p { color: #888; }
+    input, button { font-family: monospace; background: #111; color: #00ff00; border: 1px solid #333; padding: 0.5rem; margin: 0.25rem 0; }
+    input:focus, button:focus { outline: none; border-color: #00ff00; }
+    button { cursor: pointer; }
+    button:hover { background: #1a1a1a; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    input[type="text"] { width: 100%; }
+    #result-url { background: #000; }
+    a { color: #00ff00; }
+    .info { color: #666; font-size: 0.85rem; margin: 1rem 0; }
+    .highlight { color: #00ff00; }
+    img, video, audio { max-width: 100%; margin: 1rem 0; border: 1px solid #333; }
+  </style>
 </head>
 <body>
-  <h1>File Host</h1>
+  <h1>temp</h1>
   <section id="upload-section">
-    <input type="file" id="file-input">
-    <input type="password" id="delete-password" placeholder="Deletion password (optional)">
-    <button id="upload-btn" disabled>Upload</button>
+    <p>Zero-knowledge encrypted file hosting. Files are encrypted in your browser before upload using <span class="highlight">AES-256-GCM</span>. The decryption key is stored in the URL fragment and <span class="highlight">never sent to the server</span>.</p>
+    <p class="info">Max 512MB · Retention based on file size · Files auto-expire</p>
+    <hr style="border-color: #333; margin: 1.5rem 0;">
+    <input type="file" id="file-input"><br>
+    <input type="password" id="delete-password" placeholder="deletion password (optional)"><br>
+    <button id="upload-btn" disabled>upload</button>
     <div id="progress" hidden></div>
   </section>
   <section id="result-section" hidden>
-    <h2>Uploaded</h2>
-    <input type="text" id="result-url" readonly size="60">
-    <button id="copy-btn">Copy</button>
-    <p id="expiry-info"></p>
-    <button id="new-upload-btn">Upload Another</button>
+    <h2>uploaded</h2>
+    <input type="text" id="result-url" readonly>
+    <button id="copy-btn">copy</button>
+    <p id="expiry-info" class="info"></p>
+    <button id="new-upload-btn">upload another</button>
   </section>
   <section id="download-section" hidden>
-    <h2>Download</h2>
+    <h2>download</h2>
     <p id="file-info"></p>
     <div id="preview"></div>
-    <button id="download-btn">Download</button>
+    <button id="download-btn">download</button>
     <div id="decrypt-progress" hidden></div>
   </section>
   <script src="/app.js"></script>
