@@ -81,11 +81,11 @@ async function main() {
   console.log(`   Key (base64url): ${toBase64Url(key)}`);
   console.log(`   IV (base64url): ${toBase64Url(iv)}`);
 
-  // 3. Upload encrypted blob as a file
+  // 3. Upload encrypted blob as a file (keeping original filename and mime type for browser preview)
   console.log("\n3. Uploading encrypted blob...");
   const formData = new FormData();
-  const blob = new Blob([encrypted], { type: "application/octet-stream" });
-  formData.append("file", blob, "encrypted.bin");
+  const blob = new Blob([encrypted], { type: "image/png" });
+  formData.append("file", blob, "test.png");
 
   const uploadResponse = await fetch(`${BASE_URL}/`, {
     method: "POST",
