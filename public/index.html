@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>temp</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <style>
     * { font-family: monospace; font-size: 14px; box-sizing: border-box; }
     body { background: #fff; color: #000; padding: 2rem; max-width: 600px; margin: 0 auto; }
@@ -13,7 +12,6 @@
     button { cursor: pointer; text-decoration: underline; }
     img, video, audio { max-width: 100%; margin: 1rem 0; }
     section { margin: 1rem 0; }
-    .formula { margin: 1rem 0; overflow-x: auto; }
   </style>
 </head>
 <body>
@@ -23,7 +21,7 @@
 <p>files encrypted in browser with AES-256-GCM</p>
 <p>decryption key stored in URL fragment, never sent to server</p>
 <p>max 512MB - files auto-expire based on size</p>
-<div class="formula" id="retention-formula"></div>
+<p>retention = 30 + (30 - 365) * ((size/512) - 1)^3 days</p>
 <p><a href="https://github.com/kittens-inc/temp">github</a></p>
 <br>
 <input type="file" id="file-input"><br>
@@ -45,18 +43,6 @@
 <button id="download-btn">download</button>
 <div id="decrypt-progress" hidden></div>
 </section>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="/app.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  if (typeof katex !== 'undefined') {
-    katex.render(
-      '\\text{retention} = 30 + (30 - 365) \\cdot \\left(\\frac{\\text{size}}{512} - 1\\right)^3 \\text{ days}',
-      document.getElementById('retention-formula'),
-      { throwOnError: false }
-    );
-  }
-});
-</script>
 </body>
 </html>
