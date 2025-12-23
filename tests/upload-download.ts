@@ -2,67 +2,59 @@ import { readFileSync, writeFileSync } from "fs";
 
 const BASE_URL = "http://localhost:3000";
 
-function toBase64Url(buffer: ArrayBuffer | Uint8Array): string {
+function toBase64(buffer: ArrayBuffer | Uint8Array): string {
   const arrayBuffer = buffer instanceof Uint8Array ? buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) : buffer;
-  return Buffer.from(arrayBuffer)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
+  return Buffer.from(arrayBuffer).toString("base64");
 }
 
-function fromBase64Url(str: string): Uint8Array {
-  const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
-  return new Uint8Array(Buffer.from(base64, "base64"));
+function fromBase64(str: string): Uint8Array {
+  return new Uint8Array(Buffer.from(str, "base64"));
 }
 
-async function encrypt(
-  data: Uint8Array
-): Promise<{ encrypted: Uint8Array; key: Uint8Array; iv: Uint8Array }> {
-  const key = crypto.getRandomValues(new Uint8Array(32));
+async function encrypt(data: Uint8Array): Promise<{ encrypted: Uint8Array; key: CryptoKey }> {
+  // Generate key
+  const key = await crypto.subtle.generateKey(
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+
+  // Generate IV
   const iv = crypto.getRandomValues(new Uint8Array(12));
 
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    key.buffer as ArrayBuffer,
-    { name: "AES-GCM" },
-    false,
-    ["encrypt"]
-  );
-
-  const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: iv.buffer as ArrayBuffer },
-    cryptoKey,
-    data.buffer as ArrayBuffer
-  );
-
-  return {
-    encrypted: new Uint8Array(encrypted),
+  // Encrypt
+  const encryptedData = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
     key,
-    iv,
-  };
+    data
+  );
+
+  // Combine IV + encrypted data (same format as frontend)
+  const combined = new Uint8Array(iv.length + encryptedData.byteLength);
+  combined.set(iv);
+  combined.set(new Uint8Array(encryptedData), iv.length);
+
+  return { encrypted: combined, key };
 }
 
-async function decrypt(
-  encrypted: Uint8Array,
-  key: Uint8Array,
-  iv: Uint8Array
-): Promise<Uint8Array> {
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    key.buffer as ArrayBuffer,
-    { name: "AES-GCM" },
-    false,
-    ["decrypt"]
-  );
+async function decrypt(data: Uint8Array, key: CryptoKey): Promise<Uint8Array> {
+  // Extract IV from the beginning
+  const iv = data.slice(0, 12);
+  const encrypted = data.slice(12);
 
   const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: iv.buffer as ArrayBuffer },
-    cryptoKey,
-    encrypted.buffer as ArrayBuffer
+    { name: "AES-GCM", iv },
+    key,
+    encrypted
   );
 
   return new Uint8Array(decrypted);
+}
+
+async function exportKey(key: CryptoKey): Promise<string> {
+  const raw = await crypto.subtle.exportKey("raw", key);
+  // Use standard base64 (same as frontend)
+  return toBase64(raw);
 }
 
 async function main() {
@@ -76,10 +68,10 @@ async function main() {
 
   // 2. Encrypt the image
   console.log("\n2. Encrypting image...");
-  const { encrypted, key, iv } = await encrypt(new Uint8Array(imageData));
-  console.log(`   Encrypted size: ${encrypted.length} bytes`);
-  console.log(`   Key (base64url): ${toBase64Url(key)}`);
-  console.log(`   IV (base64url): ${toBase64Url(iv)}`);
+  const { encrypted, key } = await encrypt(new Uint8Array(imageData));
+  const exportedKey = await exportKey(key);
+  console.log(`   Encrypted size: ${encrypted.length} bytes (includes 12-byte IV)`);
+  console.log(`   Key (base64): ${exportedKey}`);
 
   // 3. Upload encrypted blob as a file (keeping original filename and mime type for browser preview)
   console.log("\n3. Uploading encrypted blob...");
@@ -104,9 +96,8 @@ async function main() {
   console.log(`   Expires at: ${uploadResult.expires_at}`);
   console.log(`   Retention days: ${uploadResult.retention_days}`);
 
-  // Build the fragment for the URL
-  const fragment = `${toBase64Url(iv)}:${toBase64Url(key)}`;
-  const fullUrl = `${BASE_URL}/${id}#${fragment}`;
+  // Build the URL (key in fragment, same format as frontend)
+  const fullUrl = `${BASE_URL}/${id}#${exportedKey}`;
   console.log(`   Full URL: ${fullUrl}`);
 
   // 4. Download encrypted blob
@@ -123,7 +114,7 @@ async function main() {
 
   // 5. Decrypt the downloaded blob
   console.log("\n5. Decrypting downloaded blob...");
-  const decrypted = await decrypt(downloadedEncrypted, key, iv);
+  const decrypted = await decrypt(downloadedEncrypted, key);
   console.log(`   Decrypted size: ${decrypted.length} bytes`);
 
   // 6. Verify the decrypted data matches original
@@ -155,6 +146,7 @@ async function main() {
   console.log(`\n7. Saved decrypted file to ${outputPath}`);
 
   console.log("\n=== Test completed successfully! ===");
+  console.log(`\nOpen in browser to test preview: ${fullUrl}`);
 }
 
 main().catch((err) => {
