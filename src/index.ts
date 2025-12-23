@@ -86,7 +86,6 @@ const app = new Elysia()
   .get("/:id", async ({ params, set }) => {
     const { id } = params;
     if (id === "app.js") return Bun.file("public/app.js");
-    if (id === "style.css") return Bun.file("public/style.css");
 
     const file = await db.getFile(id);
     if (!file) {
@@ -156,7 +155,6 @@ const app = new Elysia()
 
   .get("/", () => Bun.file("public/index.html"))
   .get("/app.js", () => Bun.file("public/app.js"))
-  .get("/style.css", () => Bun.file("public/style.css"))
 
   .listen(3000);
 

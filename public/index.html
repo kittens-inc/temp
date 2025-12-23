@@ -4,42 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>File Host</title>
-  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <main>
-    <h1>File Host</h1>
-    <section id="upload-section">
-      <div class="drop-zone" id="drop-zone">
-        <p>Drop file here or click to select</p>
-        <input type="file" id="file-input" hidden>
-      </div>
-      <div class="options">
-        <label><input type="checkbox" id="encrypt-toggle" checked> E2EE</label>
-        <input type="password" id="delete-password" placeholder="Deletion password (optional)">
-      </div>
-      <button id="upload-btn" disabled>Upload</button>
-      <div id="progress" hidden>
-        <div class="progress-bar"><div class="progress-fill"></div></div>
-        <span class="progress-text">0%</span>
-      </div>
-    </section>
-    <section id="result-section" hidden>
-      <h2>Uploaded</h2>
-      <div class="result-box">
-        <input type="text" id="result-url" readonly>
-        <button id="copy-btn">Copy</button>
-      </div>
-      <p id="expiry-info"></p>
-      <button id="new-upload-btn">Upload Another</button>
-    </section>
-    <section id="download-section" hidden>
-      <h2>Download</h2>
-      <p id="file-info"></p>
-      <button id="download-btn">Download</button>
-      <div id="decrypt-progress" hidden>Decrypting...</div>
-    </section>
-  </main>
+  <h1>File Host</h1>
+  <section id="upload-section">
+    <input type="file" id="file-input">
+    <input type="password" id="delete-password" placeholder="Deletion password (optional)">
+    <button id="upload-btn" disabled>Upload</button>
+    <div id="progress" hidden></div>
+  </section>
+  <section id="result-section" hidden>
+    <h2>Uploaded</h2>
+    <input type="text" id="result-url" readonly size="60">
+    <button id="copy-btn">Copy</button>
+    <p id="expiry-info"></p>
+    <button id="new-upload-btn">Upload Another</button>
+  </section>
+  <section id="download-section" hidden>
+    <h2>Download</h2>
+    <p id="file-info"></p>
+    <div id="preview"></div>
+    <button id="download-btn">Download</button>
+    <div id="decrypt-progress" hidden></div>
+  </section>
   <script src="/app.js"></script>
 </body>
 </html>

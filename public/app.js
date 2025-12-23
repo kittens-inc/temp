@@ -1,12 +1,8 @@
 const $ = (s) => document.querySelector(s);
-const dropZone = $("#drop-zone");
 const fileInput = $("#file-input");
 const uploadBtn = $("#upload-btn");
-const encryptToggle = $("#encrypt-toggle");
 const deletePassword = $("#delete-password");
 const progress = $("#progress");
-const progressFill = $(".progress-fill");
-const progressText = $(".progress-text");
 const uploadSection = $("#upload-section");
 const resultSection = $("#result-section");
 const resultUrl = $("#result-url");
@@ -15,10 +11,9 @@ const expiryInfo = $("#expiry-info");
 const newUploadBtn = $("#new-upload-btn");
 const downloadSection = $("#download-section");
 const fileInfo = $("#file-info");
+const preview = $("#preview");
 const downloadBtn = $("#download-btn");
 const decryptProgress = $("#decrypt-progress");
-
-let selectedFile = null;
 
 async function generateKey() {
   return await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
@@ -55,71 +50,39 @@ function formatSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-dropZone.addEventListener("click", () => fileInput.click());
-dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
-dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
-dropZone.addEventListener("drop", (e) => {
-  e.preventDefault();
-  dropZone.classList.remove("dragover");
-  if (e.dataTransfer.files.length) selectFile(e.dataTransfer.files[0]);
+fileInput.addEventListener("change", () => {
+  uploadBtn.disabled = !fileInput.files.length;
 });
-fileInput.addEventListener("change", () => { if (fileInput.files.length) selectFile(fileInput.files[0]); });
-
-function selectFile(file) {
-  selectedFile = file;
-  dropZone.querySelector("p").textContent = `${file.name} (${formatSize(file.size)})`;
-  uploadBtn.disabled = false;
-}
 
 uploadBtn.addEventListener("click", async () => {
-  if (!selectedFile) return;
+  const file = fileInput.files[0];
+  if (!file) return;
   uploadBtn.disabled = true;
   progress.hidden = false;
+  progress.textContent = "Encrypting...";
 
-  let fileData = new Uint8Array(await selectedFile.arrayBuffer());
-  let encryptionKey = null;
+  const fileData = new Uint8Array(await file.arrayBuffer());
+  const encryptionKey = await generateKey();
+  const encryptedData = await encrypt(fileData, encryptionKey);
 
-  if (encryptToggle.checked) {
-    progressText.textContent = "Encrypting...";
-    encryptionKey = await generateKey();
-    fileData = await encrypt(fileData, encryptionKey);
-  }
-
+  progress.textContent = "Uploading...";
   const formData = new FormData();
-  formData.append("file", new Blob([fileData], { type: selectedFile.type }), selectedFile.name);
+  formData.append("file", new Blob([encryptedData], { type: file.type }), file.name);
   if (deletePassword.value) formData.append("password", deletePassword.value);
 
-  const xhr = new XMLHttpRequest();
-  xhr.open("POST", "/");
-  xhr.upload.onprogress = (e) => {
-    if (e.lengthComputable) {
-      const pct = Math.round((e.loaded / e.total) * 100);
-      progressFill.style.width = pct + "%";
-      progressText.textContent = pct + "%";
-    }
-  };
-  xhr.onload = async () => {
-    if (xhr.status === 200) {
-      const res = JSON.parse(xhr.responseText);
-      let url = res.url;
-      if (encryptionKey) url += "#" + await exportKey(encryptionKey);
-      resultUrl.value = url;
-      expiryInfo.textContent = `Expires in ${res.retention_days} days (${new Date(res.expires_at).toLocaleDateString()})`;
-      uploadSection.hidden = true;
-      resultSection.hidden = false;
-    } else {
-      alert("Upload failed: " + xhr.responseText);
-      uploadBtn.disabled = false;
-    }
-    progress.hidden = true;
-    progressFill.style.width = "0%";
-  };
-  xhr.onerror = () => {
-    alert("Upload failed");
+  try {
+    const res = await fetch("/", { method: "POST", body: formData });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    resultUrl.value = data.url + "#" + await exportKey(encryptionKey);
+    expiryInfo.textContent = `Expires in ${data.retention_days} days`;
+    uploadSection.hidden = true;
+    resultSection.hidden = false;
+  } catch (e) {
+    alert("Upload failed: " + e.message);
     uploadBtn.disabled = false;
-    progress.hidden = true;
-  };
-  xhr.send(formData);
+  }
+  progress.hidden = true;
 });
 
 copyBtn.addEventListener("click", () => {
@@ -130,36 +93,26 @@ copyBtn.addEventListener("click", () => {
 });
 
 newUploadBtn.addEventListener("click", () => {
-  selectedFile = null;
   fileInput.value = "";
-  dropZone.querySelector("p").textContent = "Drop file here or click to select";
-  uploadBtn.disabled = true;
   deletePassword.value = "";
+  uploadBtn.disabled = true;
   resultSection.hidden = true;
   uploadSection.hidden = false;
 });
 
-async function fetchAndDecrypt(id, hash) {
+async function fetchAndDecrypt(id, key) {
   const res = await fetch(`/${id}/raw`);
-  let data = new Uint8Array(await res.arrayBuffer());
-  if (hash) {
-    const key = await importKey(hash);
-    data = new Uint8Array(await decrypt(data, key));
-  }
-  return data;
-}
-
-function isPreviewable(mimeType) {
-  return mimeType.startsWith("image/") || mimeType.startsWith("video/") || mimeType.startsWith("audio/");
+  const data = new Uint8Array(await res.arrayBuffer());
+  return new Uint8Array(await decrypt(data, key));
 }
 
 async function handleDownload() {
   const path = location.pathname;
   const hash = location.hash.slice(1);
-  if (path.length < 2) return;
+  if (path.length < 2 || !hash) return;
 
   const id = path.slice(1);
-  if (id === "app.js" || id === "style.css") return;
+  if (id === "app.js") return;
 
   try {
     const infoRes = await fetch(`/${id}/info`);
@@ -168,32 +121,32 @@ async function handleDownload() {
 
     uploadSection.hidden = true;
     downloadSection.hidden = false;
-    fileInfo.innerHTML = `<strong>${info.filename}</strong><br>${formatSize(info.size)}<br>Expires: ${new Date(info.expires_at).toLocaleDateString()}`;
-    if (hash) fileInfo.innerHTML += "<br><em>E2EE enabled</em>";
+    fileInfo.innerHTML = `<strong>${info.filename}</strong> (${formatSize(info.size)})<br>Expires: ${new Date(info.expires_at).toLocaleDateString()}`;
 
-    if (isPreviewable(info.mime_type)) {
+    const key = await importKey(hash);
+
+    if (info.mime_type.startsWith("image/") || info.mime_type.startsWith("video/") || info.mime_type.startsWith("audio/")) {
       decryptProgress.hidden = false;
-      decryptProgress.textContent = hash ? "Decrypting..." : "Loading...";
-      const data = await fetchAndDecrypt(id, hash);
+      decryptProgress.textContent = "Decrypting...";
+      const data = await fetchAndDecrypt(id, key);
       const blob = new Blob([data], { type: info.mime_type });
       const url = URL.createObjectURL(blob);
       decryptProgress.hidden = true;
 
-      const preview = document.createElement(info.mime_type.startsWith("image/") ? "img" : info.mime_type.startsWith("video/") ? "video" : "audio");
-      preview.src = url;
-      preview.style.maxWidth = "100%";
-      preview.style.maxHeight = "70vh";
-      if (preview.tagName !== "IMG") preview.controls = true;
-      downloadSection.insertBefore(preview, downloadBtn);
+      if (info.mime_type.startsWith("image/")) {
+        preview.innerHTML = `<img src="${url}" style="max-width:100%">`;
+      } else if (info.mime_type.startsWith("video/")) {
+        preview.innerHTML = `<video src="${url}" controls style="max-width:100%"></video>`;
+      } else {
+        preview.innerHTML = `<audio src="${url}" controls></audio>`;
+      }
     }
 
     downloadBtn.onclick = async () => {
       downloadBtn.disabled = true;
       decryptProgress.hidden = false;
-      decryptProgress.textContent = hash ? "Decrypting..." : "Loading...";
-
-      const data = await fetchAndDecrypt(id, hash);
-
+      decryptProgress.textContent = "Decrypting...";
+      const data = await fetchAndDecrypt(id, key);
       decryptProgress.hidden = true;
       const blob = new Blob([data], { type: info.mime_type });
       const url = URL.createObjectURL(blob);
