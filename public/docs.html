@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>temp - docs</title>
+  <style>
+    * { font-family: monospace; font-size: 14px; box-sizing: border-box; }
+    body { background: #fff; color: #000; padding: 2rem; max-width: 600px; margin: 0 auto; }
+    h1, h2 { font-weight: normal; }
+    h2 { margin-top: 2rem; }
+    pre { background: #f5f5f5; padding: 1rem; overflow-x: auto; }
+    a { color: #000; }
+  </style>
+</head>
+<body>
+<h1>temp docs</h1>
+<p><a href="/">← back</a></p>
+
+<h2>overview</h2>
+<p>files are encrypted client-side using AES-256-GCM before upload. the server never sees unencrypted data. the decryption key is stored in the URL fragment (#key) and is never sent to the server.</p>
+
+<h2>url format</h2>
+<pre>https://temp.example/{id}#{key}</pre>
+<p>the key after # is required to decrypt the file.</p>
+
+<h2>upload flow</h2>
+<ol>
+<li>generate AES-256-GCM key</li>
+<li>encrypt file with key</li>
+<li>upload encrypted blob to server</li>
+<li>receive file id</li>
+<li>share url: /{id}#{base64-key}</li>
+</ol>
+
+<h2>download flow</h2>
+<ol>
+<li>extract key from URL fragment</li>
+<li>fetch encrypted data from server</li>
+<li>decrypt with AES-256-GCM</li>
+<li>display or download decrypted file</li>
+</ol>
+
+<h2>api</h2>
+
+<p><strong>POST /</strong> - upload encrypted file</p>
+<pre>Content-Type: multipart/form-data
+
+file: (encrypted binary)
+password: (optional, for deletion)</pre>
+
+<p><strong>GET /{id}/raw</strong> - download encrypted data</p>
+
+<p><strong>GET /{id}/info</strong> - file metadata</p>
+<pre>{
+  "id": "abc123",
+  "filename": "photo.jpg",
+  "size": 1024,
+  "mime_type": "image/jpeg",
+  "expires_at": "2025-01-22T00:00:00.000Z",
+  "has_password": false
+}</pre>
+
+<p><strong>DELETE /{id}</strong> - delete file (requires password if set)</p>
+
+<h2>retention</h2>
+<pre>retention = 30 + (30 - 365) * ((size/512) - 1)^3 days</pre>
+<p>small files: ~365 days, large files (512MB): ~30 days</p>
+
+</body>
+</html>

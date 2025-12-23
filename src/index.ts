@@ -154,6 +154,7 @@ const app = new Elysia()
   })
 
   .get("/", () => Bun.file("public/index.html"))
+  .get("/docs", () => Bun.file("public/docs.html"))
   .get("/app.js", () => Bun.file("public/app.js"))
 
   .listen(3000);
