@@ -139,6 +139,20 @@ newUploadBtn.addEventListener("click", () => {
   uploadSection.hidden = false;
 });
 
+async function fetchAndDecrypt(id, hash) {
+  const res = await fetch(`/${id}/raw`);
+  let data = new Uint8Array(await res.arrayBuffer());
+  if (hash) {
+    const key = await importKey(hash);
+    data = new Uint8Array(await decrypt(data, key));
+  }
+  return data;
+}
+
+function isPreviewable(mimeType) {
+  return mimeType.startsWith("image/") || mimeType.startsWith("video/") || mimeType.startsWith("audio/");
+}
+
 async function handleDownload() {
   const path = location.pathname;
   const hash = location.hash.slice(1);
@@ -157,18 +171,28 @@ async function handleDownload() {
     fileInfo.innerHTML = `<strong>${info.filename}</strong><br>${formatSize(info.size)}<br>Expires: ${new Date(info.expires_at).toLocaleDateString()}`;
     if (hash) fileInfo.innerHTML += "<br><em>E2EE enabled</em>";
 
+    if (isPreviewable(info.mime_type)) {
+      decryptProgress.hidden = false;
+      decryptProgress.textContent = hash ? "Decrypting..." : "Loading...";
+      const data = await fetchAndDecrypt(id, hash);
+      const blob = new Blob([data], { type: info.mime_type });
+      const url = URL.createObjectURL(blob);
+      decryptProgress.hidden = true;
+
+      const preview = document.createElement(info.mime_type.startsWith("image/") ? "img" : info.mime_type.startsWith("video/") ? "video" : "audio");
+      preview.src = url;
+      preview.style.maxWidth = "100%";
+      preview.style.maxHeight = "70vh";
+      if (preview.tagName !== "IMG") preview.controls = true;
+      downloadSection.insertBefore(preview, downloadBtn);
+    }
+
     downloadBtn.onclick = async () => {
       downloadBtn.disabled = true;
       decryptProgress.hidden = false;
+      decryptProgress.textContent = hash ? "Decrypting..." : "Loading...";
 
-      const res = await fetch(`/${id}`);
-      let data = new Uint8Array(await res.arrayBuffer());
-
-      if (hash) {
-        decryptProgress.textContent = "Decrypting...";
-        const key = await importKey(hash);
-        data = new Uint8Array(await decrypt(data, key));
-      }
+      const data = await fetchAndDecrypt(id, hash);
 
       decryptProgress.hidden = true;
       const blob = new Blob([data], { type: info.mime_type });

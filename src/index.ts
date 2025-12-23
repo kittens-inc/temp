@@ -58,7 +58,7 @@ const app = new Elysia()
     }),
   })
 
-  .get("/:id", async ({ params, set }) => {
+  .get("/:id/raw", async ({ params, set }) => {
     const { id } = params;
 
     let file = await cache.getFile(id);
@@ -81,6 +81,20 @@ const app = new Elysia()
     set.headers["content-type"] = file.mime_type;
     set.headers["content-disposition"] = `inline; filename*=UTF-8''${encodeURIComponent(file.filename)}`;
     return new Response(data);
+  })
+
+  .get("/:id", async ({ params, set }) => {
+    const { id } = params;
+    if (id === "app.js") return Bun.file("public/app.js");
+    if (id === "style.css") return Bun.file("public/style.css");
+
+    const file = await db.getFile(id);
+    if (!file) {
+      set.status = 404;
+      return { error: "File not found" };
+    }
+
+    return Bun.file("public/index.html");
   })
 
   .get("/:id/info", async ({ params, set }) => {
