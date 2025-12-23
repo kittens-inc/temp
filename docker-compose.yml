@@ -3,11 +3,11 @@ services:
     build: .
     ports:
       - "3000:3000"
+    env_file:
+      - .env.production
     environment:
       - DATABASE_URL=postgresql://filehost:filehost@postgres:5432/filehost
       - REDIS_URL=redis://redis:6379
-      - MAX_FILE_SIZE=536870912
-      - BASE_URL=http://localhost:3000
     volumes:
       - ./uploads:/app/uploads
     depends_on:
