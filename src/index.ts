@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+import { rateLimit } from "elysia-rate-limit";
 import { db } from "./services/database";
 import { cache } from "./services/cache";
 import { storage } from "./services/storage";
@@ -8,7 +9,22 @@ import { hashPassword, verifyPassword } from "./utils/crypto";
 
 const MAX_FILE_SIZE = 512 * 1024 * 1024;
 
+const uploadRateLimit = rateLimit({
+	duration: 60000, // 1 minute
+	max: 10, // 10 requests per minute per IP
+	errorResponse: new Response(
+		JSON.stringify({ error: "Too many uploads, please try again later" }),
+		{ status: 429, headers: { "Content-Type": "application/json" } }
+	),
+});
+
 const app = new Elysia()
+	.get("/health", () => ({ status: "ok" }))
+	.get("/robots.txt", ({ set }) => {
+		set.headers["content-type"] = "text/plain";
+		return "User-agent: *\nDisallow: /";
+	})
+	.use(uploadRateLimit)
 	.post(
 		"/",
 		async ({ body, set }) => {
@@ -62,7 +78,7 @@ const app = new Elysia()
 	)
 
 	.get("/:id/raw", async ({ params, set }) => {
-		const { id } = params;
+		const id = params.id as string;
 
 		let file = await cache.getFile(id);
 		if (!file) {
@@ -88,7 +104,7 @@ const app = new Elysia()
 	})
 
 	.get("/:id", async ({ params, set }) => {
-		const { id } = params;
+		const id = params.id as string;
 		if (id === "app.js") return Bun.file("public/app.js");
 
 		const file = await db.getFile(id);
@@ -101,7 +117,7 @@ const app = new Elysia()
 	})
 
 	.get("/:id/info", async ({ params, set }) => {
-		const { id } = params;
+		const id = params.id as string;
 
 		let file = await cache.getFile(id);
 		if (!file) {
@@ -128,7 +144,7 @@ const app = new Elysia()
 	.delete(
 		"/:id",
 		async ({ params, body, set }) => {
-			const { id } = params;
+			const id = params.id as string;
 			const password = body?.password as string | undefined;
 
 			const file = await db.getFile(id);
