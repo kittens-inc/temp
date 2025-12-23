@@ -12,6 +12,6 @@ COPY public ./public
 RUN mkdir -p uploads
 
 ENV NODE_ENV=production
-EXPOSE 3000
+EXPOSE 3067
 
 CMD ["bun", "run", "src/index.ts"]

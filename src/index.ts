@@ -183,7 +183,7 @@ const app = new Elysia()
 	.get("/docs", () => Bun.file("public/docs.html"))
 	.get("/app.js", () => Bun.file("public/app.js"))
 
-	.listen(3000);
+	.listen(3067);
 
 console.log(`Server running at http://localhost:${app.server?.port}`);
 
