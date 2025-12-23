@@ -86,7 +86,7 @@ uploadBtn.addEventListener("click", async () => {
   }
 
   const formData = new FormData();
-  formData.append("file", new Blob([fileData], { type: "application/octet-stream" }), selectedFile.name);
+  formData.append("file", new Blob([fileData], { type: selectedFile.type }), selectedFile.name);
   if (deletePassword.value) formData.append("password", deletePassword.value);
 
   const xhr = new XMLHttpRequest();
