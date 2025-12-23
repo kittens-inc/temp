@@ -1,12 +1,10 @@
-name: Deploy to VPS
+name: CI/CD
 
 on:
   push:
-    branches:
-      - master
 
 jobs:
-  deploy:
+  check:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,6 +22,15 @@ jobs:
 
       - name: Lint
         run: bun run lint
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: check
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Create production env file
         run: |
