@@ -79,7 +79,7 @@ const app = new Elysia()
     }
 
     set.headers["content-type"] = file.mime_type;
-    set.headers["content-disposition"] = `inline; filename="${file.filename}"`;
+    set.headers["content-disposition"] = `inline; filename*=UTF-8''${encodeURIComponent(file.filename)}`;
     return new Response(data);
   })
 
