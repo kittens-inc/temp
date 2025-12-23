@@ -42,7 +42,6 @@ const app = new Elysia()
       const retentionDays = getRetentionDays(file.size);
       return {
         id,
-        url: `${process.env.BASE_URL}/${id}`,
         expires_at: expiresAt.toISOString(),
         retention_days: retentionDays,
       };

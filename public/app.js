@@ -74,7 +74,7 @@ uploadBtn.addEventListener("click", async () => {
     const res = await fetch("/", { method: "POST", body: formData });
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
-    resultUrl.value = data.url + "#" + await exportKey(encryptionKey);
+    resultUrl.value = `${location.origin}/${data.id}#${await exportKey(encryptionKey)}`;
     expiryInfo.textContent = `Expires in ${data.retention_days} days`;
     uploadSection.hidden = true;
     resultSection.hidden = false;
