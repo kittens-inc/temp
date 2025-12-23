@@ -7,7 +7,7 @@ import { calculateRetention, getRetentionDays } from "./services/retention";
 import { generateId } from "./utils/id";
 import { hashPassword, verifyPassword } from "./utils/crypto";
 
-const MAX_FILE_SIZE = 512 * 1024 * 1024;
+const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || String(512 * 1024 * 1024), 10);
 
 const uploadRateLimit = rateLimit({
 	duration: 60000, // 1 minute
