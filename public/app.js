@@ -145,11 +145,24 @@ async function handleDownload() {
       decryptProgress.hidden = true;
 
       if (info.mime_type.startsWith("image/")) {
-        preview.innerHTML = `<img src="${url}" style="max-width:100%">`;
+        const img = document.createElement("img");
+        img.src = url;
+        img.style.maxWidth = "100%";
+
+        preview.appendChild(img);
       } else if (info.mime_type.startsWith("video/")) {
-        preview.innerHTML = `<video src="${url}" controls style="max-width:100%"></video>`;
+        const video = document.createElement("video");
+        video.src = url;
+        video.controls = true;
+        video.style.maxWidth = "100%";
+        
+        preview.appendChild(video);
       } else {
-        preview.innerHTML = `<audio src="${url}" controls></audio>`;
+        const audio = document.createElement("audio");
+        audio.src = url;
+        audio.controls = true;
+        
+        preview.appendChild(audio);
       }
     }
 
