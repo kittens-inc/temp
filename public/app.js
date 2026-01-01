@@ -121,7 +121,18 @@ async function handleDownload() {
 
     uploadSection.hidden = true;
     downloadSection.hidden = false;
-    fileInfo.innerHTML = `<strong>${info.filename}</strong> (${formatSize(info.size)})<br>Expires: ${new Date(info.expires_at).toLocaleDateString()}`;
+
+    fileInfo.textContent = "";
+    const fileName = document.createElement("strong");
+    fileName.textContent = info.filename;
+
+    fileInfo.appendChild(fileName);
+    fileInfo.appendChild(document.createTextNode(` (${formatSize(info.size)})`));
+
+    const linebreak = document.createElement("br");
+    fileInfo.appendChild(linebreak);
+
+    fileInfo.appendChild(document.createTextNode(`Expires: ${new Date(info.expires_at).toLocaleDateString()}`));
 
     const key = await importKey(hash);
 
